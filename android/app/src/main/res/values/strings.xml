@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">500 Hours</string>
-    <string name="title_activity_main">500 Hours</string>
+    <string name="app_name">ohjeyti</string>
+    <string name="title_activity_main">ohjeyti</string>
     <string name="package_name">com.fivehundredhours.app</string>
     <string name="custom_url_scheme">com.fivehundredhours.app</string>
 </resources>

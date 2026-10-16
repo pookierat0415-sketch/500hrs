@@ -23,8 +23,8 @@ import {
 // The public landing page. main.jsx shows it in a normal browser tab; the
 // installed app (home screen or APK) opens straight into the tracker instead.
 
-// The newest GitHub Release asset named 500-hours.apk.
-const APK_URL = 'https://github.com/pookierat0415-sketch/500hrs/releases/latest/download/500-hours.apk'
+// The newest GitHub Release asset named ohjeyti.apk.
+const APK_URL = 'https://github.com/pookierat0415-sketch/500hrs/releases/latest/download/ohjeyti.apk'
 const APK_VERSION = '1.0.0'
 // Opens the tracker in this browser tab instead of the landing page.
 const OPEN_IN_BROWSER = '/?app'
@@ -134,7 +134,7 @@ function PhoneMockup() {
           <div className="mx-auto mt-2.5 h-5 w-24 rounded-full bg-black" />
           <div className="flex items-center gap-2 px-4 pt-3">
             <Logo className="size-7 rounded-lg" iconClass="size-4" />
-            <span className="text-sm font-bold">500 Hours</span>
+            <span className="text-sm font-bold">ohjeyti</span>
             <span className="ml-auto flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2 py-1 font-mono text-[10px] font-semibold text-emerald-300">
               <span className="size-1.5 rounded-full bg-emerald-400" />
               03:42:18
@@ -253,7 +253,7 @@ function InstalledNotice() {
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-emerald-500/10 p-4 text-sm text-emerald-200 ring-1 ring-emerald-400/30">
       <Check className="size-5 shrink-0 text-emerald-400" />
-      Installed! Open <strong className="font-semibold text-white">500 Hours</strong> from your home screen or app list.
+      Installed! Open <strong className="font-semibold text-white">ohjeyti</strong> from your home screen or app list.
     </div>
   )
 }
@@ -271,7 +271,7 @@ function AndroidPanel({ canInstall, installed, install }) {
           <>
             <button type="button" onClick={install} className={primaryButton}>
               <Download className="size-5" />
-              Install 500 Hours
+              Install ohjeyti
             </button>
             <a href={APK_URL} download className={secondaryButton}>
               <Smartphone className="size-5" />
@@ -292,10 +292,10 @@ function AndroidPanel({ canInstall, installed, install }) {
             {canInstall ? (
               <>
                 <Step n={1}>
-                  Tap <strong className="text-white">Install 500 Hours</strong>, then <strong className="text-white">Install</strong>{' '}
+                  Tap <strong className="text-white">Install ohjeyti</strong>, then <strong className="text-white">Install</strong>{' '}
                   in the pop-up.
                 </Step>
-                <Step n={2}>Open 500 Hours from your home screen. That’s it.</Step>
+                <Step n={2}>Open ohjeyti from your home screen. That’s it.</Step>
               </>
             ) : (
               <>
@@ -307,7 +307,7 @@ function AndroidPanel({ canInstall, installed, install }) {
                   This is normal for apps outside the Play Store.
                 </Step>
                 <Step n={3}>
-                  Tap <strong className="text-white">Install</strong>, then open 500 Hours from your home screen.
+                  Tap <strong className="text-white">Install</strong>, then open ohjeyti from your home screen.
                 </Step>
               </>
             )}
@@ -347,12 +347,12 @@ function IOSPanel() {
     { icon: Compass, title: 'Open this page in Safari', body: 'Not Chrome or Facebook’s browser. Only Safari can add apps to your Home Screen.' },
     { icon: Share, title: 'Tap the Share button', body: 'The square with an arrow pointing up, in Safari’s bottom bar (top bar on iPad).' },
     { icon: SquarePlus, title: 'Choose “Add to Home Screen”', body: 'Scroll down the share sheet if you don’t see it right away.' },
-    { icon: Sun, title: 'Tap “Add”', body: '500 Hours appears on your Home Screen and opens full-screen like a regular app.', logo: true },
+    { icon: Sun, title: 'Tap “Add”', body: 'ohjeyti appears on your Home Screen and opens full-screen like a regular app.', logo: true },
   ]
 
   return (
     <div className="rounded-3xl border border-white/5 bg-slate-900/80 p-6 sm:p-8">
-      <h3 className="text-xl font-bold">Add 500 Hours to your iPhone</h3>
+      <h3 className="text-xl font-bold">Add ohjeyti to your iPhone</h3>
       <p className="mt-2 text-slate-400">No App Store needed, and it still works offline.</p>
 
       {isIOSNotSafari && (
@@ -472,9 +472,9 @@ export default function Landing() {
 
       <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-950/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-          <a href="#top" className="flex items-center gap-2.5" aria-label="500 Hours home">
+          <a href="#top" className="flex items-center gap-2.5" aria-label="ohjeyti home">
             <Logo />
-            <span className="text-lg font-bold tracking-tight">500 Hours</span>
+            <span className="text-lg font-bold tracking-tight">ohjeyti</span>
           </a>
           <div className="flex items-center gap-1 sm:gap-6">
             <a href="#features" className="hidden text-sm font-medium text-slate-300 hover:text-white sm:inline">Features</a>
@@ -512,7 +512,7 @@ export default function Landing() {
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <a href="#install" className={`${primaryButton} sm:w-auto`}>
                 <Download className="size-5" />
-                Install 500 Hours
+                Install ohjeyti
               </a>
               <a href="#features" className={`${secondaryButton} sm:w-auto`}>
                 See what it does
@@ -591,7 +591,7 @@ export default function Landing() {
             <h2 className="mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl">Your 500 hours start with one tap.</h2>
             <a href="#install" className={`${primaryButton} mx-auto mt-8 inline-flex w-auto px-8`}>
               <Download className="size-5" />
-              Install 500 Hours
+              Install ohjeyti
             </a>
           </div>
         </section>
@@ -601,7 +601,7 @@ export default function Landing() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 text-sm text-slate-500 sm:flex-row sm:px-6">
           <p className="flex items-center gap-2">
             <Sun className="size-4 text-sun-400" />
-            500 Hours · © {YEAR}
+            ohjeyti · © {YEAR}
           </p>
           <p>Made for IT &amp; engineering interns.</p>
         </div>

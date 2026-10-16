@@ -154,7 +154,7 @@ export async function buildReportDocx(report) {
   )
 
   const doc = new Document({
-    creator: '500 Hours',
+    creator: 'ohjeyti',
     title: 'OJT Narrative Report',
     sections: [
       {

@@ -155,7 +155,7 @@ const cell = (text, opts = {}) =>
 export async function buildSampleTemplate() {
   const line = { style: BorderStyle.SINGLE, size: 4, color: '94A3B8' }
   const doc = new Document({
-    creator: '500 Hours',
+    creator: 'ohjeyti',
     title: 'OJT Narrative Report Template',
     sections: [
       {

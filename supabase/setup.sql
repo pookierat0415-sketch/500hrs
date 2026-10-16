@@ -1,4 +1,4 @@
--- Problem reports for the 500 Hours app.
+-- Problem reports for the ohjeyti app.
 -- Run once in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
 --
 -- The app only ever INSERTS. Anonymous users cannot read, edit, or delete

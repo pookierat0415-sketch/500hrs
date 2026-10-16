@@ -781,7 +781,7 @@ export default function App() {
         <div className="max-w-xs">
           <h1 className="text-lg font-bold">Couldn&apos;t open your saved data</h1>
           <p className="mt-2 text-sm text-slate-400">
-            Your logs are still on this device. Close other tabs of 500 Hours and try again.
+            Your logs are still on this device. Close other tabs of ohjeyti and try again.
           </p>
           <button
             type="button"
@@ -877,7 +877,7 @@ function Header({ activeShift, now, onOpenTimer, onOpenSettings }) {
           <Sun className="size-5 text-ink" strokeWidth={2.5} />
         </div>
         <div>
-          <h1 className="text-lg font-bold leading-tight tracking-tight">500 Hours</h1>
+          <h1 className="text-lg font-bold leading-tight tracking-tight">ohjeyti</h1>
           <p className="text-xs text-slate-400">
             {new Date(now).toLocaleDateString(undefined, {
               weekday: 'long',
@@ -985,7 +985,7 @@ function PwaUpdater() {
     <div role="status" className="fixed inset-x-0 bottom-28 z-50 flex justify-center px-4 print:hidden">
       <div className="flex w-full max-w-md items-center gap-3 rounded-2xl bg-slate-800 p-3 pl-4 text-sm shadow-2xl ring-1 ring-line/10">
         <span className="min-w-0 flex-1 font-medium text-slate-100">
-          {needRefresh ? 'A new version of 500 Hours is ready.' : 'Ready to work offline.'}
+          {needRefresh ? 'A new version of ohjeyti is ready.' : 'Ready to work offline.'}
         </span>
         {needRefresh ? (
           <>
@@ -1265,7 +1265,7 @@ function SettingsSheet({
       </section>
 
       <p className="pt-2 text-center text-xs text-slate-500">
-        500 Hours v{APP_VERSION} · Works offline
+        ohjeyti v{APP_VERSION} · Works offline
       </p>
     </BottomSheet>
   )
@@ -2555,7 +2555,7 @@ function SchoolTemplateCard({ template, onTemplateChange, onFill, hasData, onToa
       'sample',
       async () => {
         const { buildSampleTemplate } = await import('./reportTemplate.js')
-        await downloadBlob(await buildSampleTemplate(), '500-Hours-sample-template.docx')
+        await downloadBlob(await buildSampleTemplate(), 'ohjeyti-sample-template.docx')
       },
       'Could not create the sample template.',
     )

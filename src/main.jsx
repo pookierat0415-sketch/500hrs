@@ -16,7 +16,7 @@ const isInstalled =
 const showApp = isNativeApp || isInstalled || new URLSearchParams(window.location.search).has('app')
 
 // Chrome fires its install prompt early, possibly before the landing page has
-// loaded; keep it so the "Install 500 Hours" button can use it.
+// loaded; keep it so the "Install ohjeyti" button can use it.
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault()
   window.__installPrompt = e

@@ -13,14 +13,14 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <!-- 500 Hours: slate behind the WebView so there's no white flash on launch -->
+        <!-- ohjeyti: slate behind the WebView so there's no white flash on launch -->
         <item name="android:windowBackground">@color/app_background</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
-        <!-- 500 Hours: Android 12+ launch screen = sun icon on the yellow tile, slate background -->
+        <!-- ohjeyti: Android 12+ launch screen = sun icon on the yellow tile, slate background -->
         <item name="windowSplashScreenBackground">@color/app_background</item>
         <item name="windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
     </style>

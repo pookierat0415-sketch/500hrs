@@ -1,6 +1,6 @@
 <?php
 /**
- * 500 Hours: AI polishing endpoint.
+ * ohjeyti: AI polishing endpoint.
  *
  * Rewrites a trainee's rough daily notes into a formal OJT narrative paragraph
  * using the Gemini API. The API key stays on the server; the app only ever

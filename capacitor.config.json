@@ -1,6 +1,6 @@
 {
   "appId": "com.fivehundredhours.app",
-  "appName": "500 Hours",
+  "appName": "ohjeyti",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

@@ -64,7 +64,7 @@ function NameStep({ initial, onSubmit }) {
           <Sun className="size-8 text-ink" strokeWidth={2.5} />
         </div>
         <h1 id="onboarding-title" className="mt-6 text-center text-3xl font-extrabold tracking-tight">
-          Welcome to 500 Hours
+          Welcome to ohjeyti
         </h1>
         <p className="mx-auto mt-2 max-w-xs text-center text-slate-400">
           Let&apos;s set you up. What&apos;s your full name? It goes on your reports exactly as you type it.

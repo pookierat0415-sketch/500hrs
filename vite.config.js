@@ -18,8 +18,8 @@ export default defineConfig({
       manifestFilename: 'manifest.json',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: '500 Hours',
-        short_name: '500 Hours',
+        name: 'ohjeyti',
+        short_name: 'ohjeyti',
         description: 'Track OJT hours, daily field logs, and generate your narrative report. Works offline.',
         id: './',
         start_url: './',
