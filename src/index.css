@@ -1,0 +1,128 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-sun-50: #fffbeb;
+  --color-sun-100: #fef3c7;
+  --color-sun-200: #fde68a;
+  --color-sun-300: #fcd34d;
+  --color-sun-400: #fbbf24;
+  --color-sun-500: #f5b30b;
+  --color-sun-600: #d98e04;
+  --color-sun-700: #b46907;
+  --color-sun-800: #92520e;
+  --color-sun-900: #78440f;
+
+  /* Semantic colors that change with the theme (see the light theme below). */
+  --color-ink: oklch(12.9% 0.042 264.695); /* dark text on sun-yellow surfaces, both themes */
+  --color-accent: var(--color-sun-300); /* sun-colored text and icons */
+  --color-line: #fff; /* hairline borders, used with opacity: border-line/10 */
+  --color-card: oklch(20.8% 0.042 265.755 / 0.7); /* <Card>, stat tiles */
+  --color-raised: oklch(27.9% 0.041 260.031 / 0.4); /* entry cards */
+  --color-edge: rgb(255 255 255 / 0.05); /* card borders */
+
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+  -webkit-tap-highlight-color: transparent;
+
+  /* Used as shadow-(--shadow-card) etc. */
+  --shadow-card: 0 20px 25px -5px rgb(0 0 0 / 0.2), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+  --shadow-tile: 0 0 #0000;
+  --shadow-paper: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+}
+
+/*
+ * Light theme.
+ * The UI is written dark-first with the slate scale (slate-950 = page, slate-900 = cards,
+ * slate-100 = body text). Light mode flips that scale, so every existing slate utility
+ * gets its light counterpart without a second set of classes. Pastel accent text
+ * (the *-300 shades, used only for text on tinted chips) is darkened to stay readable.
+ */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --color-slate-950: oklch(96.4% 0.007 255);
+  --color-slate-900: oklch(100% 0 0);
+  --color-slate-800: oklch(94.6% 0.01 255);
+  --color-slate-700: oklch(91% 0.014 255);
+  --color-slate-600: oklch(86.9% 0.022 252.894);
+  --color-slate-500: oklch(55.4% 0.046 257.417);
+  --color-slate-400: oklch(44.6% 0.043 257.281);
+  --color-slate-300: oklch(37.2% 0.044 257.287);
+  --color-slate-200: oklch(27.9% 0.041 260.031);
+  --color-slate-100: oklch(20.8% 0.042 265.755);
+  --color-slate-50: oklch(12.9% 0.042 264.695);
+
+  --color-accent: var(--color-sun-700);
+  --color-line: oklch(20.8% 0.042 265.755);
+  --color-card: #fff;
+  --color-raised: #fff;
+  --color-edge: oklch(20.8% 0.042 265.755 / 0.08);
+
+  /* Soft, tight shadows: on a light page they separate cards instead of muddying them. */
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+  --shadow-tile: 0 1px 2px rgb(15 23 42 / 0.04), 0 4px 12px -8px rgb(15 23 42 / 0.1);
+  --shadow-paper: 0 1px 3px rgb(15 23 42 / 0.08), 0 12px 32px -12px rgb(15 23 42 / 0.18);
+
+  --color-sky-300: oklch(50% 0.134 242.749);
+  --color-emerald-300: oklch(50.8% 0.118 165.612);
+  --color-emerald-400: oklch(59.6% 0.145 163.225);
+  --color-orange-300: oklch(55.3% 0.195 38.402);
+  --color-violet-300: oklch(49.1% 0.27 292.581);
+  --color-pink-300: oklch(52.5% 0.223 3.958);
+  --color-teal-300: oklch(51.1% 0.096 186.391);
+  --color-red-300: oklch(50.5% 0.213 27.518);
+}
+
+/* The report preview is a white sheet of paper in both themes: restore the real slate scale. */
+:root[data-theme='light'] .paper {
+  --color-slate-50: oklch(98.4% 0.003 247.858);
+  --color-slate-100: oklch(96.8% 0.007 247.896);
+  --color-slate-200: oklch(92.9% 0.013 255.508);
+  --color-slate-300: oklch(86.9% 0.022 252.894);
+  --color-slate-400: oklch(70.4% 0.04 256.788);
+  --color-slate-500: oklch(55.4% 0.046 257.417);
+  --color-slate-600: oklch(44.6% 0.043 257.281);
+  --color-slate-700: oklch(37.2% 0.044 257.287);
+  --color-slate-800: oklch(27.9% 0.041 260.031);
+  --color-slate-900: oklch(20.8% 0.042 265.755);
+  --color-slate-950: oklch(12.9% 0.042 264.695);
+}
+
+body {
+  @apply bg-slate-950 text-slate-100 antialiased;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: white;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+}
