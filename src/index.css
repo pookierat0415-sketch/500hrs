@@ -126,3 +126,15 @@ body {
     transform: translateY(100%);
   }
 }
+
+/* Landing page (src/Landing.jsx): smooth scrolling to #install, #faq, ... below the sticky header. */
+html.landing {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.landing {
+    scroll-behavior: auto;
+  }
+}
