@@ -2,14 +2,14 @@
 // Edit these before uploading.
 // ---------------------------------------------------------------------------
 const CONFIG = {
-  // Where the Android APK is hosted. A relative path works if you upload the
-  // APK next to this page, e.g. public_html/downloads/500-hours.apk
-  apkUrl: './downloads/500-hours.apk',
+  // Where the Android APK is hosted: the newest GitHub Release asset named
+  // 500-hours.apk. This link always points at the latest release.
+  apkUrl: 'https://github.com/pookierat0415-sketch/500hrs/releases/latest/download/500-hours.apk',
   apkVersion: '1.0.0',
   apkSize: '', // e.g. '8 MB'; leave empty to hide
 
   // Where the web app (PWA) is hosted.
-  appUrl: 'https://app.yourdomain.com/',
+  appUrl: 'https://500.siaysies.com/',
 }
 
 // ---------------------------------------------------------------------------
