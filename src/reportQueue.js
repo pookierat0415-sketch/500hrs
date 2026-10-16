@@ -1,4 +1,5 @@
 import { version as APP_VERSION } from '../package.json'
+import { compressImage } from './image.js'
 
 // Offline-first problem reports.
 //
@@ -19,7 +20,6 @@ const DB_NAME = '500-hours-reports'
 const STORE = 'pending'
 const SYNC_INTERVAL_MS = 2 * 60_000
 const MAX_ATTEMPTS = 8 // reports the server keeps rejecting are dropped after this
-const MAX_SCREENSHOT_EDGE = 1600
 
 export const isReportSyncConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY)
 
@@ -70,22 +70,6 @@ function uuid() {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
 }
 
-// Downscales to a JPEG so queued reports stay small on the device and cheap to upload.
-async function compressImage(file) {
-  try {
-    const bitmap = await createImageBitmap(file)
-    const scale = Math.min(1, MAX_SCREENSHOT_EDGE / Math.max(bitmap.width, bitmap.height))
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.round(bitmap.width * scale)
-    canvas.height = Math.round(bitmap.height * scale)
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-    bitmap.close?.()
-    const blob = await new Promise((r) => canvas.toBlob(r, 'image/jpeg', 0.82))
-    return blob ?? file
-  } catch {
-    return file
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Change notifications

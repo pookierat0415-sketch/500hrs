@@ -29,3 +29,11 @@ export function splitName(name = '') {
   }
   return { firstName: words.slice(0, -1).join(' '), middleInitial: '', lastName: words.at(-1) }
 }
+
+export const nameIsComplete = (v) => Boolean(cleanName(v.firstName) && cleanName(v.lastName))
+
+export const cleanNameParts = (v) => ({
+  firstName: cleanName(v.firstName),
+  middleInitial: cleanInitial(v.middleInitial),
+  lastName: cleanName(v.lastName),
+})

@@ -19,120 +19,65 @@ import {
   Users,
   Code,
 } from 'lucide-react'
-import { cleanInitial, cleanName, composeName, MAX_NAME } from './name.js'
+import { CreateAccountForm, NameFields, RestoreAccountForm, SaveRecoveryCode } from './AccountForms.jsx'
+import { cleanNameParts, composeName, nameIsComplete } from './name.js'
+import { linkButtonClass, primaryButtonClass } from './ui.js'
 
 // First-run flow: ask for the trainee's name, then walk through every feature.
 // Shown once (App stores an `onboarded` flag) and replayable from Settings.
-
-const field =
-  'w-full rounded-2xl border border-line/10 bg-slate-800/60 px-4 py-3.5 text-base text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-sun-400/60 focus:ring-4 focus:ring-sun-400/10'
 
 // ---------------------------------------------------------------------------
 // Step 1: name
 // ---------------------------------------------------------------------------
 
-function NameStep({ initial, onSubmit }) {
-  const [firstName, setFirstName] = useState(initial.firstName ?? '')
-  const [middleInitial, setMiddleInitial] = useState(initial.middleInitial ?? '')
-  const [lastName, setLastName] = useState(initial.lastName ?? '')
+function StepHeader({ title, subtitle }) {
+  return (
+    <div className="mb-8">
+      <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-sun-300 to-sun-600 shadow-xl shadow-sun-500/30">
+        <Sun className="size-8 text-ink" strokeWidth={2.5} />
+      </div>
+      <h1 id="onboarding-title" className="mt-6 text-center text-3xl font-extrabold tracking-tight">
+        {title}
+      </h1>
+      <p className="mx-auto mt-2 max-w-xs text-center text-slate-400">{subtitle}</p>
+    </div>
+  )
+}
+
+function SwitchLink({ children, onClick }) {
+  return (
+    <p className="text-center">
+      <button type="button" onClick={onClick} className={linkButtonClass}>
+        {children}
+      </button>
+    </p>
+  )
+}
+
+/** Name only, for using the app without an account. */
+function NameStep({ initial, onSubmit, footer }) {
+  const [name, setName] = useState({
+    firstName: initial.firstName ?? '',
+    middleInitial: initial.middleInitial ?? '',
+    lastName: initial.lastName ?? '',
+  })
   const [touched, setTouched] = useState(false)
-  const firstInput = useRef(null)
-
-  useEffect(() => {
-    firstInput.current?.focus()
-  }, [])
-
-  const missingFirst = !cleanName(firstName)
-  const missingLast = !cleanName(lastName)
-  const preview = composeName({ firstName, middleInitial, lastName })
+  const preview = composeName(name)
 
   const handleSubmit = (e) => {
     e.preventDefault()
     setTouched(true)
-    if (missingFirst || missingLast) return
-    onSubmit({
-      firstName: cleanName(firstName),
-      middleInitial: cleanInitial(middleInitial),
-      lastName: cleanName(lastName),
-    })
+    if (nameIsComplete(name)) onSubmit(cleanNameParts(name))
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-1 flex-col" noValidate>
       <div className="flex-1">
-        <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-sun-300 to-sun-600 shadow-xl shadow-sun-500/30">
-          <Sun className="size-8 text-ink" strokeWidth={2.5} />
-        </div>
-        <h1 id="onboarding-title" className="mt-6 text-center text-3xl font-extrabold tracking-tight">
-          Welcome to ohjeyti
-        </h1>
-        <p className="mx-auto mt-2 max-w-xs text-center text-slate-400">
-          Let&apos;s set you up. What&apos;s your full name? It goes on your reports exactly as you type it.
-        </p>
-
-        <div className="mt-8 space-y-3">
-          <div>
-            <label htmlFor="ob-first" className="mb-1.5 block text-sm font-semibold text-slate-200">
-              First name
-            </label>
-            <input
-              id="ob-first"
-              ref={firstInput}
-              value={firstName}
-              maxLength={MAX_NAME}
-              autoComplete="given-name"
-              autoCapitalize="words"
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="e.g. Juan"
-              aria-invalid={touched && missingFirst}
-              className={`${field} ${touched && missingFirst ? 'border-red-400/60' : ''}`}
-            />
-          </div>
-
-          <div className="grid grid-cols-[6rem_1fr] gap-3">
-            <div>
-              <label htmlFor="ob-mi" className="mb-1.5 block text-sm font-semibold text-slate-200">
-                M.I.
-              </label>
-              <input
-                id="ob-mi"
-                value={middleInitial}
-                maxLength={3}
-                autoComplete="additional-name"
-                autoCapitalize="characters"
-                onChange={(e) => setMiddleInitial(cleanInitial(e.target.value))}
-                placeholder="D"
-                className={`${field} text-center`}
-              />
-            </div>
-            <div>
-              <label htmlFor="ob-last" className="mb-1.5 block text-sm font-semibold text-slate-200">
-                Last name
-              </label>
-              <input
-                id="ob-last"
-                value={lastName}
-                maxLength={MAX_NAME}
-                autoComplete="family-name"
-                autoCapitalize="words"
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="e.g. Dela Cruz"
-                aria-invalid={touched && missingLast}
-                className={`${field} ${touched && missingLast ? 'border-red-400/60' : ''}`}
-              />
-            </div>
-          </div>
-
-          {touched && (missingFirst || missingLast) ? (
-            <p role="alert" className="text-sm text-red-300">
-              Please enter your {missingFirst && missingLast ? 'first and last name' : missingFirst ? 'first name' : 'last name'}.
-              M.I. is optional.
-            </p>
-          ) : (
-            <p className="text-xs text-slate-500">M.I. is optional. You can change your name later in the Report tab.</p>
-          )}
-        </div>
-
+        <StepHeader
+          title="Welcome to ohjeyti"
+          subtitle="What’s your full name? It goes on your reports exactly as you type it."
+        />
+        <NameFields value={name} onChange={setName} showErrors={touched} autoFocus />
         {preview && (
           <div className="mt-6 rounded-2xl bg-slate-800/50 p-4 ring-1 ring-line/5">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">On your report</p>
@@ -140,14 +85,13 @@ function NameStep({ initial, onSubmit }) {
           </div>
         )}
       </div>
-
-      <button
-        type="submit"
-        className="mt-8 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-sun-400 text-base font-bold text-ink shadow-lg shadow-sun-500/20 transition hover:bg-sun-300 active:scale-[0.98]"
-      >
-        Continue
-        <ArrowRight className="size-5" />
-      </button>
+      <div className="mt-8 space-y-4">
+        <button type="submit" className={primaryButtonClass}>
+          Continue
+          <ArrowRight className="size-5" />
+        </button>
+        {footer}
+      </div>
     </form>
   )
 }
@@ -443,8 +387,31 @@ function buildSlides({ firstName, aiAvailable }) {
  * @param {(name: object) => void} props.onSaveName
  * @param {() => void} props.onFinish
  */
-export default function Onboarding({ initialName, askName, aiAvailable, onSaveName, onFinish }) {
-  const [stage, setStage] = useState(askName ? 'name' : 'tour')
+/**
+ * @param {object} props
+ * @param {{firstName?: string, middleInitial?: string, lastName?: string}} props.initialName
+ * @param {boolean} props.askName          start with sign-up / name instead of the tour
+ * @param {boolean} props.aiAvailable      include the AI slide
+ * @param {boolean} props.accountsAvailable offer accounts (online backup)
+ * @param {boolean} props.online
+ * @param {(name: object) => void} props.onSaveName
+ * @param {(values: object) => Promise<{username: string, recoveryCode: string}>} props.onCreateAccount
+ * @param {(values: object, onProgress: Function) => Promise<void>} props.onRestoreAccount
+ * @param {() => void} props.onFinish
+ */
+export default function Onboarding({
+  initialName,
+  askName,
+  aiAvailable,
+  accountsAvailable,
+  online,
+  onSaveName,
+  onCreateAccount,
+  onRestoreAccount,
+  onFinish,
+}) {
+  const [stage, setStage] = useState(askName ? (accountsAvailable ? 'account' : 'name') : 'tour')
+  const [created, setCreated] = useState(null) // { username, recoveryCode }
   const [firstName, setFirstName] = useState(initialName.firstName ?? '')
   const [index, setIndex] = useState(0)
   const touchStart = useRef(null)
@@ -490,7 +457,55 @@ export default function Onboarding({ initialName, askName, aiAvailable, onSaveNa
       className="fixed inset-0 z-[80] overflow-y-auto bg-slate-950 bg-[radial-gradient(ellipse_at_top,rgba(245,179,11,0.12),transparent_60%)] text-slate-100"
     >
       <div className="mx-auto flex min-h-full w-full max-w-md flex-col px-6 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] pt-[calc(env(safe-area-inset-top)+2rem)]">
-        {stage === 'name' ? (
+        {stage === 'account' ? (
+          <div>
+            <StepHeader
+              title="Welcome to ohjeyti"
+              subtitle="Create your account so you can get your logs back if you ever delete the app or change phones. No password needed."
+            />
+            <CreateAccountForm
+              initialName={initialName}
+              online={online}
+              onCreate={async (values) => {
+                const result = await onCreateAccount(values)
+                setFirstName(values.firstName)
+                setCreated(result)
+                setStage('code')
+              }}
+              footer={
+                <div className="space-y-3 pt-1">
+                  <SwitchLink onClick={() => setStage('restore')}>I already have an account</SwitchLink>
+                  <p className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => setStage('name')}
+                      className="text-sm font-medium text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
+                    >
+                      Continue without an account
+                    </button>
+                  </p>
+                </div>
+              }
+            />
+          </div>
+        ) : stage === 'code' ? (
+          <div>
+            <StepHeader
+              title="Save your recovery code"
+              subtitle="You’ll need it, with your username, to get your logs back on a new phone. There’s no password to remember."
+            />
+            <SaveRecoveryCode username={created.username} code={created.recoveryCode} onDone={() => setStage('tour')} />
+          </div>
+        ) : stage === 'restore' ? (
+          <div>
+            <StepHeader title="Welcome back" subtitle="Enter your username and recovery code to bring back your logs and photos." />
+            <RestoreAccountForm
+              online={online}
+              onRestore={onRestoreAccount}
+              footer={<SwitchLink onClick={() => setStage('account')}>Create a new account instead</SwitchLink>}
+            />
+          </div>
+        ) : stage === 'name' ? (
           <NameStep
             initial={initialName}
             onSubmit={(name) => {
@@ -498,6 +513,11 @@ export default function Onboarding({ initialName, askName, aiAvailable, onSaveNa
               setFirstName(name.firstName)
               setStage('tour')
             }}
+            footer={
+              accountsAvailable && (
+                <SwitchLink onClick={() => setStage('account')}>Create an account to back up your logs</SwitchLink>
+              )
+            }
           />
         ) : (
           <div

@@ -68,13 +68,13 @@ const FEATURES = [
 const EXTRAS = [
   { icon: Clock, title: 'Shift timer.', body: 'One tap to clock in and out. Forgot? Add hours manually.' },
   { icon: Camera, title: 'Photo evidence.', body: 'Take or upload up to 6 photos per log entry.' },
-  { icon: ShieldCheck, title: 'Private by default.', body: 'Your logs never leave your phone unless you export them.' },
+  { icon: ShieldCheck, title: 'Backed up, no password.', body: 'Optional account: just a username. Get your logs back on a new phone with your recovery code.' },
 ]
 
 const FAQ = [
   {
     q: 'Where is my data stored?',
-    a: 'On your phone only. Hours, logs, and photos are saved in the app’s storage on your device. Nothing is uploaded to an account. Export your report regularly so you always have a copy.',
+    a: 'On your phone first, so everything works offline. If you create an account (just a username and your name, no password), your logs and photos are also backed up online whenever you’re connected. Without an account, nothing leaves your phone unless you export it.',
   },
   {
     q: 'Does it need internet?',
@@ -87,6 +87,10 @@ const FAQ = [
   {
     q: 'My school has its own report format. Will it work?',
     a: 'Yes, if it’s a Word document. Add placeholders like {name}, {totalHours}, or a {#weeks}…{/weeks} section where your logs should go, upload it in the Report tab, and download it filled in. The app includes a sample template and a full placeholder guide.',
+  },
+  {
+    q: 'What if I delete the app or get a new phone?',
+    a: 'If you created an account, install ohjeyti again, tap “I already have an account”, and enter your username and the recovery code you saved when you signed up. Your logs, hours, and photos come back. Keep the code private: anyone with your username and code can see your logs.',
   },
   {
     q: 'Can I use it on a laptop?',
@@ -519,7 +523,7 @@ export default function Landing() {
               </a>
             </div>
             <ul className="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm text-slate-400 lg:justify-start">
-              {['Android & iPhone', 'No account needed', 'Your logs stay on your phone'].map((t) => (
+              {['Android & iPhone', 'No password needed', 'Online backup, optional'].map((t) => (
                 <li key={t} className="flex items-center gap-1.5">
                   <Check className="size-4 text-sun-400" strokeWidth={2.5} />
                   {t}

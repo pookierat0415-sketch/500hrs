@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardList,
+  CloudUpload,
   CloudOff,
   Clock,
   Code,
@@ -44,6 +45,7 @@ import {
   Trash2,
   TrendingUp,
   Undo2,
+  UserRound,
   User,
   Users,
   WifiOff,
@@ -52,6 +54,19 @@ import {
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { version as APP_VERSION } from '../package.json'
 import { AiUnavailableError, isAiConfigured, polishNotes } from './aiPolish.js'
+import {
+  AccountError,
+  AccountUnavailableError,
+  backUp,
+  buildSnapshot,
+  deleteAccount,
+  fingerprint,
+  isAccountConfigured,
+  register as registerAccount,
+  restore as restoreAccountApi,
+  restoreToDevice,
+} from './account.js'
+import { CreateAccountForm, RecoveryCodeCard, RestoreAccountForm, SaveRecoveryCode } from './AccountForms.jsx'
 import * as db from './db.js'
 import { composeName, MAX_NAME, splitName } from './name.js'
 import { isNativeApp, saveFile, syncSystemBars } from './native.js'
@@ -377,6 +392,117 @@ function useAutoPolish({ entries, online, categoryMap, onPolished, onFailed }) {
 
 const AiContext = createContext({ configured: false, online: true, activeId: null })
 
+const BACKUP_DELAY_MS = 8_000 // wait for typing to settle before uploading
+const BACKUP_RETRY_MS = 60_000
+
+/**
+ * Online backup. Whenever the data changes and the phone is online, uploads new
+ * photos (shrunk) and the latest snapshot to the student's account. Offline or a
+ * busy server just means it tries again later; nothing is lost.
+ * Returns { state, backupNow } where state is one of
+ * 'none' | 'saved' | 'pending' | 'saving' | 'offline' | 'error' | 'signed-out'.
+ */
+function useCloudBackup({ ready, account, setAccount, online, entries, shifts, profile, customCategories, activeShift }) {
+  const [activity, setActivity] = useState('idle') // idle | saving | error
+  const [tick, setTick] = useState(0)
+  const busy = useRef(false)
+  const force = useRef(false)
+  const retryTimer = useRef(null)
+
+  const snapshot = useMemo(
+    () => buildSnapshot({ entries, shifts, profile, customCategories, activeShift }),
+    [entries, shifts, profile, customCategories, activeShift],
+  )
+  const hash = useMemo(() => fingerprint(JSON.stringify(snapshot)), [snapshot])
+  const photos = useMemo(() => entries.flatMap((e) => e.photos), [entries])
+  const latest = useRef({})
+
+  useEffect(() => {
+    latest.current = { snapshot, hash, photos, account }
+  })
+  useEffect(() => () => clearTimeout(retryTimer.current), [])
+
+  const token = account?.token
+  const signedOut = Boolean(account?.signedOut)
+  const uploaded = account?.uploadedPhotos
+  const upToDate =
+    Boolean(account) && account.backupHash === hash && photos.every((ph) => uploaded?.includes(ph.id))
+
+  useEffect(() => {
+    if (!ready || !token || signedOut || !isAccountConfigured || !online || (upToDate && !force.current)) return
+    const delay = force.current ? 0 : BACKUP_DELAY_MS
+    force.current = false
+    const t = setTimeout(async () => {
+      if (busy.current) {
+        retryTimer.current = setTimeout(() => setTick((n) => n + 1), 3000)
+        return
+      }
+      busy.current = true
+      setActivity('saving')
+      const current = latest.current
+      try {
+        const ids = await backUp({
+          token,
+          snapshot: current.snapshot,
+          fullName: current.snapshot.profile?.name,
+          photos: current.photos,
+          uploadedIds: current.account?.uploadedPhotos ?? [],
+        })
+        setAccount((a) => a && { ...a, uploadedPhotos: ids, backupHash: current.hash, lastBackupAt: Date.now() })
+        setActivity('idle')
+      } catch (err) {
+        if (err instanceof AccountError && err.status === 401) {
+          setAccount((a) => a && { ...a, signedOut: true })
+          setActivity('idle')
+        } else {
+          console.warn('[backup]', err)
+          setActivity(err instanceof AccountUnavailableError ? 'idle' : 'error')
+          clearTimeout(retryTimer.current)
+          retryTimer.current = setTimeout(() => setTick((n) => n + 1), BACKUP_RETRY_MS)
+        }
+      } finally {
+        busy.current = false
+      }
+    }, delay)
+    return () => clearTimeout(t)
+  }, [ready, token, signedOut, online, hash, upToDate, tick, setAccount])
+
+  let state = 'none'
+  if (account) {
+    if (signedOut) state = 'signed-out'
+    else if (activity === 'saving') state = 'saving'
+    else if (upToDate) state = 'saved'
+    else if (!online) state = 'offline'
+    else if (activity === 'error') state = 'error'
+    else state = 'pending'
+  }
+
+  const backupNow = () => {
+    force.current = true
+    setActivity('idle')
+    setTick((n) => n + 1)
+  }
+
+  return { state, backupNow }
+}
+
+/** "XXXXXXXXXXXXXXXX" or any spacing -> "XXXX-XXXX-XXXX-XXXX" */
+const formatRecoveryCode = (code) =>
+  code
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .replace(/(.{4})(?=.)/g, '$1-')
+
+const fmtAgo = (ts) => {
+  if (!ts) return ''
+  const mins = Math.round((Date.now() - ts) / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const hours = Math.round(mins / 60)
+  if (hours < 24) return `${hours} h ago`
+  return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
 const THEME_KEY = '500h-theme'
 const THEME_COLORS = { light: '#f3f5f8', dark: '#020617' }
 
@@ -453,6 +579,8 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [theme, setTheme] = useTheme()
   const [pendingReports, setPendingReports] = useState(0)
+  const [account, setAccount] = useState(null) // { username, fullName, token, recoveryCode, uploadedPhotos, backupHash, lastBackupAt, signedOut? }
+  const [accountSheet, setAccountSheet] = useState(null) // null | 'create' | 'restore'
   const toastTimer = useRef(null)
 
   const now = useNow(activeShift ? 1000 : 60_000)
@@ -486,6 +614,22 @@ export default function App() {
         if (!meta.onboarded) setOnboarding({ askName: true })
         setCustomCategories((meta.customCategories ?? []).map(hydrateCategory))
         setReportTemplate(meta.reportTemplate ?? null)
+        setAccount(meta.account ?? null)
+        // After a restore the app reloads; say welcome back once it's up.
+        let restored = null
+        try {
+          restored = JSON.parse(sessionStorage.getItem('ohjeyti-restored') ?? 'null')
+          sessionStorage.removeItem('ohjeyti-restored')
+        } catch {
+          // sessionStorage unavailable: skip the message
+        }
+        if (restored) {
+          showToast(
+            restored.missingPhotos
+              ? `Welcome back! Restored your logs (${restored.missingPhotos} photo${restored.missingPhotos > 1 ? 's' : ''} weren't backed up).`
+              : 'Welcome back! Your logs are restored.',
+          )
+        }
         setReady(true)
         // Ask the browser not to evict our data when the device runs low on space.
         navigator.storage?.persist?.().catch(() => {})
@@ -514,6 +658,9 @@ export default function App() {
   useEffect(() => {
     if (ready) persist(db.setMeta('reportTemplate', reportTemplate))
   }, [ready, reportTemplate])
+  useEffect(() => {
+    if (ready) persist(db.setMeta('account', account))
+  }, [ready, account])
 
   useEffect(() => {
     entriesRef.current = entries
@@ -654,6 +801,18 @@ export default function App() {
     persist(db.saveEntry(next))
   }
 
+  const backup = useCloudBackup({
+    ready,
+    account,
+    setAccount,
+    online,
+    entries,
+    shifts,
+    profile,
+    customCategories,
+    activeShift,
+  })
+
   const polishingId = useAutoPolish({
     entries,
     online,
@@ -698,6 +857,64 @@ export default function App() {
 
   const saveName = (parts) =>
     setProfile((p) => ({ ...p, ...parts, name: composeName(parts) }))
+
+  // Creates the account with the server, then saves the name and account locally.
+  const createAccount = async ({ username, firstName, middleInitial, lastName }) => {
+    const parts = { firstName, middleInitial, lastName }
+    const res = await registerAccount(username, composeName(parts))
+    saveName(parts)
+    setAccount({
+      username: res.username,
+      fullName: res.fullName,
+      token: res.token,
+      recoveryCode: res.recoveryCode,
+      uploadedPhotos: [],
+      backupHash: null,
+      lastBackupAt: null,
+    })
+    return { username: res.username, recoveryCode: res.recoveryCode }
+  }
+
+  // Checks the code, then replaces this phone's data with the backup and reloads.
+  const restoreAccount = async ({ username, recoveryCode }, onProgress) => {
+    const res = await restoreAccountApi(username, recoveryCode)
+    const restored = {
+      username: res.username,
+      fullName: res.fullName,
+      token: res.token,
+      recoveryCode: formatRecoveryCode(recoveryCode),
+      uploadedPhotos: [],
+      backupHash: null,
+      lastBackupAt: null,
+    }
+    if (!res.hasBackup) {
+      // The account exists but never finished a backup: keep this phone's data and back it up now.
+      setAccount(restored)
+      if (!profile.firstName && !profile.lastName) saveName(splitName(res.fullName))
+      setAccountSheet(null)
+      if (onboarding) finishOnboarding()
+      showToast(`Signed in as @${res.username}. Backing up this phone’s logs.`)
+      return
+    }
+    const { missingPhotos } = await restoreToDevice(restored, onProgress)
+    try {
+      sessionStorage.setItem('ohjeyti-restored', JSON.stringify({ missingPhotos }))
+    } catch {
+      // only affects the welcome-back message
+    }
+    window.location.reload()
+    await new Promise(() => {}) // keep the form busy until the page reloads
+  }
+
+  const removeOnlineBackup = async () => {
+    try {
+      await deleteAccount(account.token)
+      setAccount(null)
+      showToast('Online backup deleted. Your logs are still on this phone.', 'info')
+    } catch (err) {
+      showToast(err.message, 'info')
+    }
+  }
 
   const finishOnboarding = () => {
     setOnboarding(null)
@@ -840,7 +1057,27 @@ export default function App() {
                 setSettingsOpen(false)
                 setOnboarding({ askName: false })
               }}
+              account={account}
+              backupState={backup.state}
+              onBackupNow={backup.backupNow}
+              onOpenAccount={(mode) => {
+                setSettingsOpen(false)
+                setAccountSheet(mode)
+              }}
+              onDeleteBackup={removeOnlineBackup}
               onClose={() => setSettingsOpen(false)}
+            />
+          )}
+          {accountSheet && (
+            <AccountSheet
+              mode={accountSheet}
+              online={online}
+              profile={profile}
+              hasLocalData={entries.length > 0 || shifts.length > 0}
+              onModeChange={setAccountSheet}
+              onCreate={createAccount}
+              onRestore={restoreAccount}
+              onClose={() => setAccountSheet(null)}
             />
           )}
           {onboarding && (
@@ -848,7 +1085,11 @@ export default function App() {
               initialName={profile}
               askName={onboarding.askName}
               aiAvailable={isAiConfigured}
+              accountsAvailable={isAccountConfigured}
+              online={online}
               onSaveName={saveName}
+              onCreateAccount={createAccount}
+              onRestoreAccount={restoreAccount}
               onFinish={finishOnboarding}
             />
           )}
@@ -1161,6 +1402,171 @@ const THEME_OPTIONS = [
   { id: 'dark', label: 'Dark', icon: Moon },
 ]
 
+const BACKUP_STATUS = {
+  saved: { text: (a) => `Backed up ${fmtAgo(a.lastBackupAt)}`, tone: 'text-emerald-400' },
+  saving: { text: () => 'Backing up…', tone: 'text-accent' },
+  pending: { text: () => 'Changes waiting to back up', tone: 'text-slate-400' },
+  offline: { text: () => 'Offline. Backs up when you’re connected.', tone: 'text-slate-400' },
+  error: { text: () => 'Backup failed. Retrying soon.', tone: 'text-red-300' },
+  'signed-out': { text: () => 'This phone was signed out.', tone: 'text-red-300' },
+}
+
+function AccountSection({ account, state, onBackupNow, onOpen, onDelete }) {
+  const [showCode, setShowCode] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const heading = <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Account &amp; backup</h3>
+  const smallButton =
+    'flex h-10 items-center justify-center gap-1.5 rounded-xl bg-slate-700/60 px-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-700 active:scale-95 disabled:opacity-50'
+
+  if (!account) {
+    return (
+      <section>
+        {heading}
+        <div className="rounded-2xl bg-slate-800/60 p-4 ring-1 ring-line/5">
+          <div className="flex items-start gap-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sun-400/15 text-accent">
+              <CloudUpload className="size-5" />
+            </span>
+            <span>
+              <span className="block font-semibold">Back up your logs online</span>
+              <span className="block text-xs leading-relaxed text-slate-400">
+                Get them back if you delete the app or change phones. Just a username, no password.
+              </span>
+            </span>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => onOpen('create')} className={`${smallButton} bg-sun-400 text-ink hover:bg-sun-300`}>
+              Create account
+            </button>
+            <button type="button" onClick={() => onOpen('restore')} className={smallButton}>
+              Restore
+            </button>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  const status = BACKUP_STATUS[state] ?? BACKUP_STATUS.pending
+  return (
+    <section>
+      {heading}
+      <div className="rounded-2xl bg-slate-800/60 p-4 ring-1 ring-line/5">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-sun-400/15 text-accent">
+            <UserRound className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate font-semibold">{account.fullName}</span>
+            <span className="block truncate text-sm text-slate-400">@{account.username}</span>
+          </span>
+        </div>
+        <p className={`mt-3 flex items-center gap-1.5 text-xs font-medium ${status.tone}`}>
+          {state === 'saving' ? <LoaderCircle className="size-3.5 animate-spin" /> : <CloudUpload className="size-3.5" />}
+          {status.text(account)}
+        </p>
+
+        {state === 'signed-out' ? (
+          <button type="button" onClick={() => onOpen('restore')} className={`${smallButton} mt-3 w-full`}>
+            Restore my account on this phone
+          </button>
+        ) : (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <button type="button" onClick={onBackupNow} disabled={state === 'saving' || state === 'offline'} className={smallButton}>
+              Back up now
+            </button>
+            <button type="button" onClick={() => setShowCode((v) => !v)} className={smallButton} aria-expanded={showCode}>
+              {showCode ? 'Hide code' : 'Recovery code'}
+            </button>
+          </div>
+        )}
+
+        {showCode && (
+          <div className="mt-3">
+            {account.recoveryCode ? (
+              <RecoveryCodeCard username={account.username} code={account.recoveryCode} />
+            ) : (
+              <p className="text-xs text-slate-400">The recovery code isn’t stored on this phone.</p>
+            )}
+          </div>
+        )}
+
+        <div className="mt-3 border-t border-line/5 pt-3 text-center">
+          {confirmDelete ? (
+            <div className="space-y-2">
+              <p className="text-xs text-slate-400">
+                Deletes your account and online backup. Logs on this phone stay. This can’t be undone.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setConfirmDelete(false)} className={smallButton}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="h-10 rounded-xl bg-red-500/15 px-3 text-sm font-bold text-red-300 ring-1 ring-red-400/40 active:scale-95"
+                >
+                  Delete backup
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs font-medium text-slate-500 hover:text-red-300">
+              Delete my online backup
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/** Create or restore an account from Settings (after onboarding). */
+function AccountSheet({ mode, online, profile, hasLocalData, onModeChange, onCreate, onRestore, onClose }) {
+  const [created, setCreated] = useState(null)
+  const switchLink = 'text-sm font-semibold text-accent underline-offset-4 hover:underline'
+
+  if (created) {
+    return (
+      <BottomSheet title="Save your recovery code" onClose={onClose}>
+        <SaveRecoveryCode username={created.username} code={created.recoveryCode} onDone={onClose} />
+      </BottomSheet>
+    )
+  }
+
+  return mode === 'create' ? (
+    <BottomSheet title="Create your account" subtitle="Your logs back up automatically. No password needed." onClose={onClose}>
+      <CreateAccountForm
+        initialName={profile}
+        online={online}
+        onCreate={async (values) => setCreated(await onCreate(values))}
+        footer={
+          <p className="text-center">
+            <button type="button" onClick={() => onModeChange('restore')} className={switchLink}>
+              I already have an account
+            </button>
+          </p>
+        }
+      />
+    </BottomSheet>
+  ) : (
+    <BottomSheet title="Restore your account" subtitle="Bring back your logs and photos from your online backup." onClose={onClose}>
+      <RestoreAccountForm
+        online={online}
+        replacesData={hasLocalData}
+        onRestore={onRestore}
+        footer={
+          <p className="text-center">
+            <button type="button" onClick={() => onModeChange('create')} className={switchLink}>
+              Create a new account instead
+            </button>
+          </p>
+        }
+      />
+    </BottomSheet>
+  )
+}
+
 function SettingsSheet({
   theme,
   onThemeChange,
@@ -1169,10 +1575,25 @@ function SettingsSheet({
   pendingReports,
   onReport,
   onReplayTour,
+  account,
+  backupState,
+  onBackupNow,
+  onOpenAccount,
+  onDeleteBackup,
   onClose,
 }) {
   return (
     <BottomSheet title="Settings" onClose={onClose}>
+      {isAccountConfigured && (
+        <AccountSection
+          account={account}
+          state={backupState}
+          onBackupNow={onBackupNow}
+          onOpen={onOpenAccount}
+          onDelete={onDeleteBackup}
+        />
+      )}
+
       <section>
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Appearance</h3>
         <div

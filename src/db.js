@@ -103,3 +103,12 @@ export const saveAll = ({ entries = [], shifts = [], meta = {} }) =>
     shifts.forEach((s) => stores.shifts.put(s))
     Object.entries(meta).forEach(([k, v]) => stores.meta.put(v, k))
   })
+
+/** Replaces everything on this device with a restored backup. */
+export const replaceAll = ({ entries = [], shifts = [], meta = {} }) =>
+  transact(STORES, 'readwrite', (stores) => {
+    STORES.forEach((name) => stores[name].clear())
+    entries.forEach((e) => stores.entries.put(toStoredEntry({ ...e, photos: e.photos ?? [] })))
+    shifts.forEach((s) => stores.shifts.put(s))
+    Object.entries(meta).forEach(([k, v]) => stores.meta.put(v, k))
+  })

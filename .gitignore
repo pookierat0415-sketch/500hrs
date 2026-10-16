@@ -24,6 +24,7 @@ dist-ssr
 *.sw?
 
 # Server-side AI config (never commit)
+server/ohjeyti-config.php
 server/ai-config.php
 
 # Built APKs

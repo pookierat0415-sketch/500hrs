@@ -1,5 +1,6 @@
 <?php
-// Copy to ai-config.php and upload it ONE LEVEL ABOVE public_html (your home
+// Settings for the ohjeyti server scripts (ai-polish.php and account.php).
+// Copy to ohjeyti-config.php and upload it ONE LEVEL ABOVE public_html (your home
 // folder), so it can never be downloaded from the web. Never commit the real file.
 
 return [
@@ -22,6 +23,19 @@ return [
         'capacitor://localhost', // Capacitor iOS
     ],
 
-    // Requests per IP per hour.
+    // AI polishing requests per IP per hour.
     'rate_limit_per_hour' => 40,
+
+    // --- Accounts and online backup (account.php) -------------------------------
+    // hPanel -> Databases -> MySQL Databases: create a database and user, then
+    // run account-setup.sql in phpMyAdmin.
+    'db' => [
+        'host' => 'localhost',
+        'name' => 'u123456789_ohjeyti',
+        'user' => 'u123456789_ohjeyti',
+        'password' => 'PASTE-YOUR-DATABASE-PASSWORD',
+    ],
+
+    // Where backed-up photos are stored. Must be OUTSIDE public_html.
+    'data_dir' => dirname(__FILE__) . '/ohjeyti-data',
 ];

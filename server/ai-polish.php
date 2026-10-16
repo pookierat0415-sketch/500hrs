@@ -8,8 +8,8 @@
  *
  * Deploy (Hostinger):
  *   1. Upload this file to  public_html/api/ai-polish.php
- *   2. Copy ai-config.example.php to ai-config.php, fill it in, and upload it to
- *      your home folder, ONE LEVEL ABOVE public_html, so it can't be downloaded.
+ *   2. Copy ohjeyti-config.example.php to ohjeyti-config.php, fill it in, and upload
+ *      it to your home folder, ONE LEVEL ABOVE public_html, so it can't be downloaded.
  *   3. In the app's .env.local set VITE_AI_POLISH_URL=https://yourdomain.com/api/ai-polish.php
  *
  * Request:  POST JSON { "notes": "...", "category": "Development", "date": "2026-10-16" }
@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-$config = require dirname(__DIR__, 2) . '/ai-config.php';
+$config = require dirname(__DIR__, 2) . '/ohjeyti-config.php';
 
 const MAX_NOTES_CHARS = 2000;
 
