@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
@@ -5,11 +6,25 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const SLATE_950 = '#020617'
 
+// Ships the server scripts with the site at /api/. Secrets stay in
+// ohjeyti-config.php, which lives above public_html and is never built.
+const SERVER_SCRIPTS = ['_lib.php', 'account.php', 'admin.php', 'ai-polish.php']
+const serverScripts = {
+  name: 'ohjeyti-server-scripts',
+  apply: 'build',
+  generateBundle() {
+    for (const file of SERVER_SCRIPTS) {
+      this.emitFile({ type: 'asset', fileName: `api/${file}`, source: readFileSync(`server/${file}`) })
+    }
+  },
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    serverScripts,
     VitePWA({
       // A new version waits until the user taps "Reload" (see PwaUpdater in App.jsx),
       // so an update never reloads the page while someone is typing a log.
@@ -40,6 +55,7 @@ export default defineConfig({
         // so every feature works on the very first offline launch.
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,json}'],
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         cleanupOutdatedCaches: true,
       },
       devOptions: { enabled: false }, // no service worker during `npm run dev`

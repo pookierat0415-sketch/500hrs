@@ -16,7 +16,8 @@ return [
 
     // Origins allowed to call the endpoint: your site, local dev, and the Capacitor APK.
     'allowed_origins' => [
-        'https://500hrs.siaysies.com', // the site (landing page + app)
+        'https://ohjeyti.siaysies.com', // the site (landing page + app)
+        'https://500hrs.siaysies.com',
         'https://500.siaysies.com',
         'http://localhost:5173',
         'https://localhost',     // Capacitor Android

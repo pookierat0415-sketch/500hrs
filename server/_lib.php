@@ -11,6 +11,14 @@ if (!isset($config)) {
     $config = require dirname(__DIR__, 2) . '/ohjeyti-config.php';
 }
 
+if (!headers_sent()) {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+    header('X-Frame-Options: DENY');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+}
+
 const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // no 0/O, 1/I/L
 const CODE_LENGTH = 16;
 
