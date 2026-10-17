@@ -65,8 +65,15 @@ import {
   register as registerAccount,
   restore as restoreAccountApi,
   restoreToDevice,
+  sendRecoveryRequest,
 } from './account.js'
-import { CreateAccountForm, RecoveryCodeCard, RestoreAccountForm, SaveRecoveryCode } from './AccountForms.jsx'
+import {
+  CreateAccountForm,
+  RecoveryCodeCard,
+  RecoveryRequestForm,
+  RestoreAccountForm,
+  SaveRecoveryCode,
+} from './AccountForms.jsx'
 import * as db from './db.js'
 import { composeName, MAX_NAME, splitName } from './name.js'
 import { isNativeApp, saveFile, syncSystemBars } from './native.js'
@@ -1077,6 +1084,7 @@ export default function App() {
               onModeChange={setAccountSheet}
               onCreate={createAccount}
               onRestore={restoreAccount}
+              onSendRecoveryRequest={sendRecoveryRequest}
               onClose={() => setAccountSheet(null)}
             />
           )}
@@ -1090,6 +1098,7 @@ export default function App() {
               onSaveName={saveName}
               onCreateAccount={createAccount}
               onRestoreAccount={restoreAccount}
+              onSendRecoveryRequest={sendRecoveryRequest}
               onFinish={finishOnboarding}
             />
           )}
@@ -1442,6 +1451,12 @@ function AccountSection({ account, state, onBackupNow, onOpen, onDelete }) {
               Restore
             </button>
           </div>
+          <p className="mt-3 text-center text-xs text-slate-500">
+            Lost your recovery code?{' '}
+            <button type="button" onClick={() => onOpen('help')} className="font-semibold text-accent underline-offset-4 hover:underline">
+              Get help
+            </button>
+          </p>
         </div>
       </section>
     )
@@ -1522,7 +1537,7 @@ function AccountSection({ account, state, onBackupNow, onOpen, onDelete }) {
 }
 
 /** Create or restore an account from Settings (after onboarding). */
-function AccountSheet({ mode, online, profile, hasLocalData, onModeChange, onCreate, onRestore, onClose }) {
+function AccountSheet({ mode, online, profile, hasLocalData, onModeChange, onCreate, onRestore, onSendRecoveryRequest, onClose }) {
   const [created, setCreated] = useState(null)
   const switchLink = 'text-sm font-semibold text-accent underline-offset-4 hover:underline'
 
@@ -1530,6 +1545,25 @@ function AccountSheet({ mode, online, profile, hasLocalData, onModeChange, onCre
     return (
       <BottomSheet title="Save your recovery code" onClose={onClose}>
         <SaveRecoveryCode username={created.username} code={created.recoveryCode} onDone={onClose} />
+      </BottomSheet>
+    )
+  }
+
+  if (mode === 'help') {
+    return (
+      <BottomSheet title="Get help from the admin" subtitle="Lost your recovery code? The admin can check it’s you and send a new one." onClose={onClose}>
+        <RecoveryRequestForm
+          profile={profile}
+          online={online}
+          onSend={onSendRecoveryRequest}
+          footer={
+            <p className="text-center">
+              <button type="button" onClick={() => onModeChange('restore')} className={switchLink}>
+                Back to restore
+              </button>
+            </p>
+          }
+        />
       </BottomSheet>
     )
   }
@@ -1555,6 +1589,7 @@ function AccountSheet({ mode, online, profile, hasLocalData, onModeChange, onCre
         online={online}
         replacesData={hasLocalData}
         onRestore={onRestore}
+        onLostCode={() => onModeChange('help')}
         footer={
           <p className="text-center">
             <button type="button" onClick={() => onModeChange('create')} className={switchLink}>

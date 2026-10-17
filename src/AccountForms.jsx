@@ -237,9 +237,10 @@ const formatCode = (s) =>
  * @param {(values, onProgress) => Promise<void>} props.onRestore
  * @param {boolean} props.online
  * @param {boolean} [props.replacesData]  warn that local data will be replaced
+ * @param {() => void} [props.onLostCode]  shows a link to the help request form
  * @param {React.ReactNode} [props.footer]
  */
-export function RestoreAccountForm({ onRestore, online, replacesData, footer }) {
+export function RestoreAccountForm({ onRestore, online, replacesData, onLostCode, footer }) {
   const [username, setUsername] = useState('')
   const [code, setCode] = useState('')
   const [busy, setBusy] = useState(false)
@@ -321,6 +322,14 @@ export function RestoreAccountForm({ onRestore, online, replacesData, footer }) 
             : 'Restoring…'
           : 'Restore my logs'}
       </button>
+      {onLostCode && (
+        <p className="text-center text-sm text-slate-400">
+          Lost your recovery code?{' '}
+          <button type="button" onClick={onLostCode} className="font-semibold text-accent underline-offset-4 hover:underline">
+            Ask the admin for help
+          </button>
+        </p>
+      )}
       {footer}
     </form>
   )
@@ -385,5 +394,174 @@ export function SaveRecoveryCode({ username, code, onDone }) {
         <ArrowRight className="size-5" />
       </button>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Lost recovery code: ask the admin for help
+// ---------------------------------------------------------------------------
+
+/**
+ * Sends a help request to the admin, who checks the details against the
+ * account and replies with a new recovery code.
+ *
+ * @param {object} props
+ * @param {object} props.profile  prefills name, course, company, supervisor
+ * @param {(details) => Promise<void>} props.onSend
+ * @param {boolean} props.online
+ * @param {React.ReactNode} [props.footer]
+ */
+export function RecoveryRequestForm({ profile, onSend, online, footer }) {
+  const [form, setForm] = useState({
+    username: '',
+    fullName: profile?.name ?? '',
+    contact: '',
+    school: profile?.course ?? '',
+    company: profile?.company ?? '',
+    supervisor: profile?.supervisor ?? '',
+    details: '',
+  })
+  const [touched, setTouched] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [sent, setSent] = useState(false)
+
+  const set = (key, clean = (v) => v) => (e) => setForm((f) => ({ ...f, [key]: clean(e.target.value) }))
+  const missing = {
+    fullName: cleanName(form.fullName).length < 2,
+    contact: form.contact.trim().length < 5,
+    details: form.details.trim().length < 20,
+  }
+  const invalid = Object.values(missing).some(Boolean)
+
+  const submit = async (e) => {
+    e.preventDefault()
+    setTouched(true)
+    if (invalid) return
+    setBusy(true)
+    setError('')
+    try {
+      await onSend(form)
+      setSent(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (sent) {
+    return (
+      <div className="space-y-5 text-center">
+        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-400">
+          <Check className="size-7" strokeWidth={3} />
+        </div>
+        <div>
+          <p className="text-lg font-bold">Request sent</p>
+          <p className="mt-2 text-sm leading-relaxed text-slate-400">
+            The admin will check your details against your backup and contact you at{' '}
+            <strong className="text-slate-200">{form.contact.trim()}</strong> with a new recovery code. Then tap{' '}
+            <strong className="text-slate-200">I already have an account</strong> and enter it.
+          </p>
+        </div>
+        {footer}
+      </div>
+    )
+  }
+
+  const inputError = (key) => (touched && missing[key] ? 'border-red-400/60' : '')
+
+  return (
+    <form onSubmit={submit} className="space-y-4" noValidate>
+      {!online && <ErrorText>You’re offline. Sending a request needs the internet.</ErrorText>}
+      <p className="text-sm leading-relaxed text-slate-400">
+        Tell the admin who you are. They’ll compare your answers with your backup, so include details only you would
+        know.
+      </p>
+
+      <div>
+        <label htmlFor="rq-username" className={label}>
+          Username <span className="font-normal text-slate-500">(leave empty if you forgot)</span>
+        </label>
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base text-slate-500">@</span>
+          <input
+            id="rq-username"
+            value={form.username}
+            onChange={set('username', cleanUsername)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            placeholder="juan.dc"
+            className={`${fieldClass} pl-9`}
+          />
+        </div>
+      </div>
+      <div>
+        <label htmlFor="rq-name" className={label}>
+          Full name
+        </label>
+        <input id="rq-name" value={form.fullName} onChange={set('fullName')} maxLength={120} placeholder="Juan D. Dela Cruz" className={`${fieldClass} ${inputError('fullName')}`} />
+      </div>
+      <div>
+        <label htmlFor="rq-contact" className={label}>
+          How can the admin reach you?
+        </label>
+        <input
+          id="rq-contact"
+          value={form.contact}
+          onChange={set('contact')}
+          maxLength={160}
+          autoComplete="email"
+          placeholder="Email, or Messenger / phone number"
+          className={`${fieldClass} ${inputError('contact')}`}
+        />
+      </div>
+      <div>
+        <label htmlFor="rq-school" className={label}>
+          School and course
+        </label>
+        <input id="rq-school" value={form.school} onChange={set('school')} maxLength={160} placeholder="e.g. PUP, BS Information Technology" className={fieldClass} />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="rq-company" className={label}>
+            OJT company
+          </label>
+          <input id="rq-company" value={form.company} onChange={set('company')} maxLength={160} className={fieldClass} />
+        </div>
+        <div>
+          <label htmlFor="rq-supervisor" className={label}>
+            Supervisor
+          </label>
+          <input id="rq-supervisor" value={form.supervisor} onChange={set('supervisor')} maxLength={160} className={fieldClass} />
+        </div>
+      </div>
+      <div>
+        <label htmlFor="rq-details" className={label}>
+          What happened?
+        </label>
+        <textarea
+          id="rq-details"
+          rows={5}
+          maxLength={2000}
+          value={form.details}
+          onChange={set('details')}
+          placeholder="e.g. My phone was stolen on Oct 10 and I didn’t save my code. I started OJT on Sept 22, and my last entry was about setting up VLANs on the core switch."
+          className={`${fieldClass} resize-none leading-relaxed ${inputError('details')}`}
+        />
+        <p className="mt-1.5 text-xs text-slate-500">Mention when you started, your last few entries, or your total hours.</p>
+      </div>
+
+      {touched && invalid && (
+        <ErrorText>Please fill in your full name, a way to reach you, and what happened (at least a sentence).</ErrorText>
+      )}
+      <ErrorText>{error}</ErrorText>
+      <button type="submit" disabled={busy || !online} className={primaryButtonClass}>
+        {busy ? <LoaderCircle className="size-5 animate-spin" /> : <ArrowRight className="size-5" />}
+        {busy ? 'Sending…' : 'Send request to admin'}
+      </button>
+      {footer}
+    </form>
   )
 }

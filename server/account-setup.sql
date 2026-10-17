@@ -36,3 +36,20 @@ CREATE TABLE IF NOT EXISTS rate_limits (
   hits         SMALLINT UNSIGNED NOT NULL,
   window_start DATETIME          NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Help requests from students who lost their recovery code. Reviewed in admin.php.
+CREATE TABLE IF NOT EXISTS recovery_requests (
+  id           INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  username     VARCHAR(20)  NULL,          -- what the student typed; may be blank if forgotten
+  full_name    VARCHAR(120) NOT NULL,
+  contact      VARCHAR(160) NOT NULL,      -- email or phone/Messenger, to send the new code to
+  school       VARCHAR(160) NULL,
+  company      VARCHAR(160) NULL,
+  supervisor   VARCHAR(160) NULL,
+  details      TEXT         NOT NULL,      -- reason + anything only the owner would know
+  status       ENUM('pending', 'resolved', 'rejected') NOT NULL DEFAULT 'pending',
+  admin_note   TEXT         NULL,
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  resolved_at  DATETIME     NULL,
+  KEY idx_status (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

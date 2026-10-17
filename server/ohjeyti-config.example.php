@@ -36,6 +36,13 @@ return [
         'password' => 'PASTE-YOUR-DATABASE-PASSWORD',
     ],
 
+    // --- Admin page (admin.php) ------------------------------------------------------
+    // Open admin.php once to generate this from your chosen password.
+    'admin_password_hash' => '',
+
+    // Times in downloaded daily time records.
+    'timezone' => 'Asia/Manila',
+
     // Where backed-up photos are stored. Must be OUTSIDE public_html.
     'data_dir' => dirname(__FILE__) . '/ohjeyti-data',
 ];

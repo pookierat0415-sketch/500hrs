@@ -19,7 +19,7 @@ import {
   Users,
   Code,
 } from 'lucide-react'
-import { CreateAccountForm, NameFields, RestoreAccountForm, SaveRecoveryCode } from './AccountForms.jsx'
+import { CreateAccountForm, NameFields, RecoveryRequestForm, RestoreAccountForm, SaveRecoveryCode } from './AccountForms.jsx'
 import { cleanNameParts, composeName, nameIsComplete } from './name.js'
 import { linkButtonClass, primaryButtonClass } from './ui.js'
 
@@ -397,6 +397,7 @@ function buildSlides({ firstName, aiAvailable }) {
  * @param {(name: object) => void} props.onSaveName
  * @param {(values: object) => Promise<{username: string, recoveryCode: string}>} props.onCreateAccount
  * @param {(values: object, onProgress: Function) => Promise<void>} props.onRestoreAccount
+ * @param {(details: object) => Promise<void>} props.onSendRecoveryRequest
  * @param {() => void} props.onFinish
  */
 export default function Onboarding({
@@ -408,6 +409,7 @@ export default function Onboarding({
   onSaveName,
   onCreateAccount,
   onRestoreAccount,
+  onSendRecoveryRequest,
   onFinish,
 }) {
   const [stage, setStage] = useState(askName ? (accountsAvailable ? 'account' : 'name') : 'tour')
@@ -502,7 +504,18 @@ export default function Onboarding({
             <RestoreAccountForm
               online={online}
               onRestore={onRestoreAccount}
+              onLostCode={() => setStage('help')}
               footer={<SwitchLink onClick={() => setStage('account')}>Create a new account instead</SwitchLink>}
+            />
+          </div>
+        ) : stage === 'help' ? (
+          <div>
+            <StepHeader title="Get help from the admin" subtitle="Lost your recovery code? The admin can check it’s you and send you a new one." />
+            <RecoveryRequestForm
+              profile={initialName}
+              online={online}
+              onSend={onSendRecoveryRequest}
+              footer={<SwitchLink onClick={() => setStage('restore')}>Back to restore</SwitchLink>}
             />
           </div>
         ) : stage === 'name' ? (

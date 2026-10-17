@@ -24,17 +24,17 @@
  *   POST photo&id=x    [token]  raw image bytes             -> { ok }
  *   GET  photo&id=x    [token]                              -> image bytes
  *   POST delete        [token]                              -> { deleted }
+ *   POST recovery-request       { username?, fullName, contact, details, school?, company?, supervisor? }
+ *                                                           -> { received }   (reviewed in admin.php)
  * [token] = header X-Ohjeyti-Token.
  */
 
 declare(strict_types=1);
 
-$config = require dirname(__DIR__, 2) . '/ohjeyti-config.php';
+require __DIR__ . '/_lib.php';
 
 const USERNAME_PATTERN = '/^[a-z][a-z0-9._]{2,19}$/';
 const RESERVED_USERNAMES = ['admin', 'administrator', 'root', 'support', 'ohjeyti', 'api', 'null', 'undefined', 'system'];
-const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // no 0/O, 1/I/L
-const CODE_LENGTH = 16;
 const MAX_FAILED_RESTORES = 5;
 const LOCK_MINUTES = 15;
 const MAX_SNAPSHOT_BYTES = 10 * 1024 * 1024;
@@ -69,23 +69,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // --- Helpers -------------------------------------------------------------------------
-function db(): PDO
-{
-    static $pdo;
-    global $config;
-    $pdo ??= new PDO(
-        sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $config['db']['host'], $config['db']['name']),
-        $config['db']['user'],
-        $config['db']['password'],
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ],
-    );
-    return $pdo;
-}
-
 function requireMethod(string $method): void
 {
     if ($_SERVER['REQUEST_METHOD'] !== $method) {
@@ -106,28 +89,12 @@ function jsonBody(int $maxBytes = 65536): array
     return $data;
 }
 
-/** Fixed-window rate limit per client IP and action. */
 function rateLimit(string $action, int $max, int $windowSeconds): void
 {
-    $bucket = hash('sha256', $action . '|' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
-    $pdo = db();
-    $pdo->prepare(
-        'INSERT INTO rate_limits (bucket, hits, window_start) VALUES (?, 1, NOW())
-         ON DUPLICATE KEY UPDATE
-           hits = IF(window_start < NOW() - INTERVAL ? SECOND, 1, hits + 1),
-           window_start = IF(window_start < NOW() - INTERVAL ? SECOND, NOW(), window_start)'
-    )->execute([$bucket, $windowSeconds, $windowSeconds]);
-    $stmt = $pdo->prepare('SELECT hits FROM rate_limits WHERE bucket = ?');
-    $stmt->execute([$bucket]);
-    if ((int) $stmt->fetchColumn() > $max) {
+    if (isRateLimited($action, $max, $windowSeconds)) {
         header('Retry-After: ' . $windowSeconds);
         respond(429, ['error' => 'Too many requests. Please try again later.']);
     }
-}
-
-function normalizeUsername(mixed $value): string
-{
-    return is_string($value) ? strtolower(trim($value)) : '';
 }
 
 function usernameProblem(string $username): ?string
@@ -139,20 +106,6 @@ function usernameProblem(string $username): ?string
         return 'That username is reserved. Please choose another.';
     }
     return null;
-}
-
-function newRecoveryCode(): string
-{
-    $code = '';
-    for ($i = 0; $i < CODE_LENGTH; $i++) {
-        $code .= CODE_ALPHABET[random_int(0, strlen(CODE_ALPHABET) - 1)];
-    }
-    return implode('-', str_split($code, 4)); // XXXX-XXXX-XXXX-XXXX
-}
-
-function normalizeCode(mixed $value): string
-{
-    return is_string($value) ? preg_replace('/[^A-Z0-9]/', '', strtoupper($value)) : '';
 }
 
 function issueToken(int $accountId): string
@@ -181,12 +134,6 @@ function authenticate(): array
     }
     db()->prepare('UPDATE account_tokens SET last_used_at = NOW() WHERE token_hash = ?')->execute([$hash]);
     return $account;
-}
-
-function photoDir(int $accountId): string
-{
-    global $config;
-    return rtrim($config['data_dir'], '/\\') . "/photos/$accountId";
 }
 
 function photoId(): string
@@ -290,6 +237,42 @@ try {
                 'hasBackup' => (bool) $updatedAt,
                 'updatedAt' => $updatedAt ?: null,
             ]);
+        }
+
+        case 'recovery-request': {
+            requireMethod('POST');
+            rateLimit('recovery-request', 5, 3600);
+            $body = jsonBody();
+            $field = function (string $key, int $max, bool $required = false) use ($body): ?string {
+                $value = is_string($body[$key] ?? null) ? trim(preg_replace('/[ 	]+/u', ' ', $body[$key])) : '';
+                if ($value === '') {
+                    if ($required) {
+                        respond(400, ['error' => 'Please fill in all required fields.']);
+                    }
+                    return null;
+                }
+                return mb_substr($value, 0, $max);
+            };
+            $username = normalizeUsername($body['username'] ?? '');
+            $fullName = $field('fullName', 120, true);
+            $contact = $field('contact', 160, true);
+            $details = $field('details', 2000, true);
+            if (mb_strlen($details) < 20) {
+                respond(400, ['error' => 'Please add a bit more detail so the admin can verify it’s you.']);
+            }
+            db()->prepare(
+                'INSERT INTO recovery_requests (username, full_name, contact, school, company, supervisor, details)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)'
+            )->execute([
+                $username !== '' ? mb_substr($username, 0, 20) : null,
+                $fullName,
+                $contact,
+                $field('school', 160),
+                $field('company', 160),
+                $field('supervisor', 160),
+                $details,
+            ]);
+            respond(201, ['received' => true]);
         }
 
         case 'backup': {

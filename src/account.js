@@ -74,6 +74,8 @@ export const checkUsername = (username) => request('check', { query: `&username=
 export const register = (username, fullName) => request('register', { method: 'POST', json: { username, fullName } })
 export const restore = (username, recoveryCode) => request('restore', { method: 'POST', json: { username, recoveryCode } })
 export const deleteAccount = (token) => request('delete', { method: 'POST', token })
+/** "I lost my recovery code": goes to the admin page (server/admin.php) for a manual check. */
+export const sendRecoveryRequest = (details) => request('recovery-request', { method: 'POST', json: details })
 
 // ---------------------------------------------------------------------------
 // Backup
